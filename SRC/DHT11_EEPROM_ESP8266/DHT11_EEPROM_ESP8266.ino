@@ -24,7 +24,6 @@ volatile float t ;
 volatile byte val;
 volatile byte value;
 int aux =0;
-String cmd; 
 
 //Parametros de red y direccion IP del servidor donde enviamos los datos:
 #define mySSID     "labsenales"   //"IT10"               "electronica"      //WiFi SSID.
@@ -61,7 +60,7 @@ int fails=10;           // cargar failures>MAXFAILS para generar un RESET al ini
 String newVal;//="00.0";   // Four characters (fixed format number).
 String cmd;
 float temp;
-
+String getStr;
 //SoftwareSerial ser(RXDATA, TXDATA);   // Creates SoftwareSerial channel.
 
 
@@ -117,7 +116,7 @@ Serial.println();
 
 
 // Preparo GET string
-  String getStr = "GET /update?api_key=";
+  getStr = "GET /update?api_key=";
   getStr += apiKey;
   getStr +="&field2=";
   getStr += String(strTemp);
