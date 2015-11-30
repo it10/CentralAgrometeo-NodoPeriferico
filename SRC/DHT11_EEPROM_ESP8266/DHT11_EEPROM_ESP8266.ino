@@ -10,7 +10,7 @@ SoftwareSerial ser(10, 11);
 //asignacion de pines:
 //#define RXDATA    10      // SoftwareSerial receive pin (RED LED connected).
 //#define TXDATA    11      // SoftwareSerial transmit pin.
-//#define HRESET    3      // Pin to hardware Reset the ESP8266
+#define HRESET    8      // Pin to hardware Reset the ESP8266
 //#define ANATEMP   1      // Analog channel 1 for temperature measurement.
 
 
@@ -26,8 +26,8 @@ volatile byte value;
 int aux =0;
 
 //Parametros de red y direccion IP del servidor donde enviamos los datos:
-#define mySSID     "labsenales"   //"IT10"               "electronica"      //WiFi SSID.
-#define myPASS     "esunsecreto"   //"coopit10kit"      "laboratorio"  //Password.
+#define mySSID        "IT10"          //    "labsenales"         "electronica"      //WiFi SSID.
+#define myPASS        "coopit10kit"   // "esunsecreto"   "laboratorio"  //Password.
 #define myCHL     "6"             //numero de canal
 #define myECN     "4"             //ecn: (0 OPEN) (1 WEP) (2 WPA_PSK) (3 WPA2_PSK) (4 WPA_WPA2_PSK)
 //AT+CWSAP=mySSID,myPASS,myCHL,myECN
@@ -55,7 +55,7 @@ String apiKey = "66L8D19CBNDFLPDA";
 
 
 int i,j;
-int fails=10;           // cargar failures>MAXFAILS para generar un RESET al inicio.
+int fails=101;           // cargar failures>MAXFAILS para generar un RESET al inicio.
 //unsigned int temp;       // Use positive range values (0-32768)
 String newVal;//="00.0";   // Four characters (fixed format number).
 String cmd;
@@ -63,7 +63,7 @@ float temp;
 String getStr;
 //SoftwareSerial ser(RXDATA, TXDATA);   // Creates SoftwareSerial channel.
 
-
+int contador = 0;
 
 
 //########################################################################################################################
@@ -73,6 +73,8 @@ void setup() {
   Serial.begin(19200); //Se inicia la comunicación serial 
   dht.begin(); //Se inicia el sensor
   ser.begin(19200);
+  pinMode(HRESET, OUTPUT);
+  digitalWrite(HRESET,HIGH);
   initESP();                        // ESP8266 init.
 }
 
@@ -123,7 +125,7 @@ Serial.println();
   getStr += "\r\n\r\n";
 
 
-  Enviar_largo_dato();
+  Enviar_largo_dato();   //envia el largo del string, y luego envia el string a thingspeak
   
 
 
@@ -164,17 +166,29 @@ void sendDebug(String cmd)
 //________________________________________________________________________________________________________________________
 void initESP(){    //con esta funcion se resetea el modulo, se configura como estación y se conecta a un AP.
   while(1){
-    if (fails > MAXFAILS)           //------SOFT reset for ESP8266. 
+    if (fails > MAXFAILS)           //------ reset ESP8266. 
     {
-      //digitalWrite(HRESET,LOW);
-      //delay(100);
-      //digitalWrite(HRESET,HIGH);
+      delay(2000); //este delay esta para poder debuggiar
+      Serial.println("Hardware RESET");
+      digitalWrite(HRESET,LOW);
+      
+      delay(3000);
+      digitalWrite(HRESET,HIGH);
+      
+      delay(3000);
+      
       sendDebug("AT");
-      delay(2000);
+      delay(2000);      
       while (!ser.find("OK"))
       {
         Serial.print(".");
         delay(300);
+        contador++;
+        if(contador >= 10)
+        {
+          contador=0;
+          sendDebug("AT");
+        }
       };
       Serial.println("OK");   //es lo que responderia el ESP (lo simulo para verlo en la consola)
       
@@ -185,7 +199,7 @@ void initESP(){    //con esta funcion se resetea el modulo, se configura como es
       if(waitChar('K',10000))
       {
         Serial.println("OK");
-        return;
+        //return;
       } //Esperar por 'K' de "OK". para salir del setup                  Reemplace ok por k
       delay(2000);
       fails=0;
@@ -211,11 +225,12 @@ void initESP(){    //con esta funcion se resetea el modulo, se configura como es
         Serial.println("no OK de mode");
       }
       delay(1000);
-  bool flag = 1; 
+ 
+    bool flag = 1; 
     while(flag == 1)
     {
       sendDebug("AT+CWJAP=\"" mySSID "\",\"" myPASS "\"\r\n");
-      delay(3000);
+      delay(5000); //con 3000 funciona despues de varios intentos
       if(ser.find("OK"))
       {
         Serial.println("OK");
@@ -242,7 +257,7 @@ void initESP(){    //con esta funcion se resetea el modulo, se configura como es
       delay(1000);
 
 //-----------------------------------------------------------------------------
-      sendDebug("AT");
+      sendDebug("AT");            //luego de configurarlo es necesario un reseteo
       delay(2000);
       while (!ser.find("OK"))
       {
@@ -294,10 +309,13 @@ void Enviar_largo_dato()
 {
   cmd = "AT+CIPSEND=";            //Prepara el envío de datos. Cuando esté listo devolverá el código ">" como inductor para el comienzo del envío
   cmd += String(getStr.length());
+  Serial.println(cmd);
   ser.println(cmd);
 
   if(ser.find(">"))
   {
+    Serial.print("> ");
+    Serial.println(getStr);
     ser.print(getStr);
   }
   else
@@ -306,7 +324,10 @@ void Enviar_largo_dato()
     // alert user
     Serial.println("AT+CIPCLOSE");
     //-----------------------------------------------------------------------------
-    // reinicio el modulo   
+    // reinicio el modulo
+    initESP();
+/*    Serial.println("Se reiniciara el modulo");
+    
       sendDebug("AT");
       delay(2000);
       int contador = 0;
@@ -329,6 +350,7 @@ void Enviar_largo_dato()
         return;
       }
       delay(2000);
+      */
 //-----------------------------------------------------------------------------
   }
 }
