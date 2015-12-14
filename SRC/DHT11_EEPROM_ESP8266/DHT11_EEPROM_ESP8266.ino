@@ -25,8 +25,8 @@ volatile byte value;
 int aux =0;
 
 //Parametros de red y direccion IP del servidor donde enviamos los datos:
-#define mySSID        "IT10"            //    "labsenales"          "electronica"       //WiFi SSID.
-#define myPASS        "coopit10kit"     //    "esunsecreto"         "laboratorio"       //Password.
+#define mySSID        "ESP8266"         //"IT10"            //    "labsenales"          "electronica"       //WiFi SSID.
+#define myPASS        "pass123456"      //"coopit10kit"     //    "esunsecreto"         "laboratorio"       //Password.
 #define myCHL     "6"                   //numero de canal
 #define myECN     "4"                   //ecn: (0 OPEN) (1 WEP) (2 WPA_PSK) (3 WPA2_PSK) (4 WPA_WPA2_PSK)
 //AT+CWSAP=mySSID,myPASS,myCHL,myECN
@@ -117,12 +117,17 @@ Serial.println();
 
 
 // Preparo GET string
-
+/*
   getStr = "GET /update?api_key=";
   getStr += apiKey;
   getStr +="&field2=";
   getStr += String(strTemp);
   getStr += "\r\n\r\n";
+*/
+getStr = "tmp" ;
+getStr += strTemp; 
+getStr += "\r\n\r\n";
+
 
 //envia el largo del string, y luego envia el string a thingspeak
 
@@ -214,7 +219,7 @@ void initESP(){                     //con esta funcion se resetea el modulo, se 
       Serial.println("Preparando para configurar MODE_MSG y join_MSG");
       delay(1000);
       
-      sendDebug("AT+CWMODE=3");
+      sendDebug("AT+CWMODE=1");
       delay(1000);
       if(ser.find("no change"))
       {
@@ -227,24 +232,26 @@ void initESP(){                     //con esta funcion se resetea el modulo, se 
       delay(1000);
  
     bool flag = 1; 
-    while(flag == 1)
+    while(flag == 1)                                                //intento conectarme al AP
     {
-      sendDebug("AT+CWJAP=\"" mySSID "\",\"" myPASS "\"\r\n");
-      delay(5000); //con 3000 funciona despues de varios intentos
-      if(ser.find("OK"))
-      {
-        Serial.println("OK");
-        flag = 0;
-      }
-      else
-      {
-        Serial.println("no OK de join");
-      }
-      delay(1000);
+        sendDebug("AT+CWJAP=\"" mySSID "\",\"" myPASS "\"\r\n");
+        delay(5000);                                                //con 3000 funciona despues de varios intentos
+        if(ser.find("OK"))
+        {
+          Serial.println("OK");
+          flag = 0;
+        }
+        else
+        {
+          Serial.println("no OK de join");
+        }
+        delay(1000);
      }
 
       sendDebug("AT+CIPMUX=1");
+      
       delay(1000);
+      
       if(ser.find("OK"))
       {
         Serial.println("OK");
@@ -289,8 +296,10 @@ void initESP(){                     //con esta funcion se resetea el modulo, se 
   {
   cmd = "AT+CIPSTART=\"TCP\",\"";              //Es necesario indicar el tipo de conexión (TCP/UDP) la dirección IP y el puerto al que se realiza la conexión
                                                       //con el formato AT+CIPSTART={id},{TCP|UDP},{IP},{puerto} Siendo {id} el número de identificador de la conexión
-  cmd += "184.106.153.149"; // api.thingspeak.com
-  cmd += "\",80";
+  //cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "192.168.4.1";       // modulo ESP servidor
+  //cmd += "\",80";
+  cmd += "\",8888";         
   ser.println(cmd);
    
   if(ser.find("Error"))
@@ -309,6 +318,8 @@ void Enviar_largo_dato()
   Serial.println(cmd);
   ser.println(cmd);
 
+  delay(500);
+  
   if(ser.find(">"))
   {
     Serial.print("> ");
