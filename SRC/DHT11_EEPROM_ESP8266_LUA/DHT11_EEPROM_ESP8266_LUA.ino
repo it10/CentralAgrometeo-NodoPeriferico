@@ -41,12 +41,19 @@ HUMEDAD = dht.readHumidity();                   //Se lee la humedad
 TEMPERATURA = dht.readTemperature();            //Se lee la temperatura
 if((HUMEDAD == NAN) || (TEMPERATURA == NAN))    //si la lectura falla el modulo devuelve NAN
 {
-  Serial.print("Reinicio del modulo DHT11");
+  Serial.println("Reinicio del modulo DHT11");
   dht.begin();                                  //Se inicia el sensor
   HUMEDAD = dht.readHumidity();                 //Se lee la humedad
   TEMPERATURA = dht.readTemperature();          //Se lee la temperatura
 }
-
+while((HUMEDAD <= 1) || (TEMPERATURA <= 1))    //si la lectura falla el modulo devuelve NAN
+{
+  Serial.println("Reinicio del modulo DHT11");
+  dht.begin();                                  //Se inicia el sensor
+  delay(300);
+  HUMEDAD = dht.readHumidity();                 //Se lee la humedad
+  TEMPERATURA = dht.readTemperature();          //Se lee la temperatura
+}
 val = (byte) HUMEDAD;                           //casteo para poder escribir en EEPROM
 EEPROM.write(addr, val);                        //escribe en la direccion addr el entero val (t casteado a int)
 
